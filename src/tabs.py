@@ -11,3 +11,8 @@ def get_pop_tab(*, cursor : MySQLCursor, username : str) -> list[list[Any]]:
     cursor.execute("SELECT uid, title, author, likers, views FROM drawings ORDER BY time_created DESC LIMIT 27;")
     data = cursor.fetchall()
     return [[row[0], row[1], row[2], len(row[3]), row[4], username in row[3], "", ""] for row in data]
+
+def get_own_tab(*, cursor : MySQLCursor, username : str) -> list[list[Any]]:
+    cursor.execute("SELECT uid, title, author, likers, views FROM drawings WHERE author=%s ORDER BY time_created DESC LIMIT 27;", (username, ))
+    data = cursor.fetchall()
+    return [[row[0], row[1], row[2], len(row[3]), row[4], username in row[3], "", ""] for row in data]

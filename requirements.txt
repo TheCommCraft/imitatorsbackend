@@ -1,0 +1,4 @@
+scratchcommunication
+scratchattach
+python_dotenv
+cachetools
