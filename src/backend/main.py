@@ -1,6 +1,7 @@
 from os import getenv
 from os.path import dirname, join
 import json, secrets, sys
+import mysql.connector as mc
 sys.path.insert(0, r"C:\Users\simon\OneDrive\Dokumente\scratchcommunication\scratchcommunication\scratchcommunication-1")
 from cachetools import TTLCache
 from typing import Optional
@@ -163,6 +164,15 @@ def start(duration : Optional[int] = None):
     @sky.on("secure_message")
     def on_msg(event):
         log(f"{event.client.client_id} ({event.client.username}) >>> {repr(event.content)}")
+        
+    @client.on_error
+    def on_err(error : Exception, retry : FunctionType):
+        nonlocal mysql
+        nonlocal cursor
+        if isinstance(error, mc.errors.OperationalError):
+            mysql = mysql_connect(host=MYSQL_HOST, port=MYSQL_PORT, user=MYSQL_USER, password=MYSQL_PASS, database=MYSQL_DB)
+            cursor = mysql.cursor()
+            retry()
     
     log("Starting requests handler...")
 
