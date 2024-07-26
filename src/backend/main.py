@@ -173,6 +173,8 @@ def start(duration : Optional[int] = None):
             mysql = mysql_connect(host=MYSQL_HOST, port=MYSQL_PORT, user=MYSQL_USER, password=MYSQL_PASS, database=MYSQL_DB)
             cursor = mysql.cursor()
             retry()
+            return
+        raise error
     
     log("Starting requests handler...")
 
