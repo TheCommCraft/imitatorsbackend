@@ -73,6 +73,10 @@ def start(duration : Optional[int] = None):
         if tab in ["new", "1"]:
             return get_new_tab(cursor=cursor, username=user)
         if tab in ["own", "mine", "yours", "2"]:
+            try:
+                assert user
+            except AssertionError:
+                return []
             return get_own_tab(cursor=cursor, username=user)
         return []
 
@@ -154,16 +158,16 @@ def start(duration : Optional[int] = None):
         
     @sky.on("new_user")
     def on_user(event):
-        log(f"New user: {event.__dict__}")
+        log(f"New user: {event.client.username} @ {event.client.client_id}")
         
     @sky.on("secure_message")
     def on_msg(event):
-        log(f"New msg: {event.__dict__}")
+        log(f"{event.client.client_id} ({event.client.username}) >>> {repr(event.content)}")
     
     log("Starting requests handler...")
 
     try:
-        client.start(duration=duration or 3600)
+        client.start(duration=duration or None)
     finally:
         cursor.close()
         mysql.close()

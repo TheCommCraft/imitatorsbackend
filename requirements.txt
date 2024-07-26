@@ -2,4 +2,4 @@ scratchcommunication
 scratchattach
 python_dotenv
 cachetools
-mysqlx-connector-python
+mysql-connector-python
