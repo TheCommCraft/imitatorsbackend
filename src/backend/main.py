@@ -1,7 +1,7 @@
 from os import getenv
 from os.path import dirname, join
 import json, secrets, sys
-#sys.path.insert(0, r"C:\Users\simon\OneDrive\Dokumente\scratchcommunication\scratchcommunication\scratchcommunication-1")
+sys.path.insert(0, r"C:\Users\simon\OneDrive\Dokumente\scratchcommunication\scratchcommunication\scratchcommunication-1")
 from cachetools import TTLCache
 from typing import Optional
 from types import FunctionType
@@ -14,7 +14,7 @@ from .tabs import get_new_tab, get_pop_tab, get_own_tab
 from .drawings import add_view, find_content, add_liker, remove_liker, update_highscore, find_drawing_screen_data, create_drawing
 from dotenv import load_dotenv
 
-def start():
+def start(duration : Optional[int] = None):
     def log(msg : str) -> None:
         print("Logging:", msg)
 
@@ -41,7 +41,8 @@ def start():
     security = Security.from_string(SECURITY_SECRET)
     cloud1 = session.create_cloudconnection(PROJECT_ID, daemon_thread=True)
     cloud2 = session.create_tw_cloudconnection(PROJECT_ID, contact_info="TheCommCraft on Scratch and Github", daemon_thread=True)
-    cloud = CloudSocket(cloud=Sky(cloud1, cloud2), security=security)
+    sky = Sky(cloud1, cloud2)
+    cloud = CloudSocket(cloud=sky, security=security)
     client = RequestHandler(cloud_socket=cloud)
     mysql = mysql_connect(host=MYSQL_HOST, port=MYSQL_PORT, user=MYSQL_USER, password=MYSQL_PASS, database=MYSQL_DB)
     cursor = mysql.cursor()
@@ -104,7 +105,9 @@ def start():
     @client.request(name="propose_highscore", auto_convert=True, allow_python_syntax=True)
     def propose_highscore(uid : int, highscore_content : str, highscore_score : float) -> bool:
         try:
-            user = client.current_client_username
+            if len(highscore_content) > 8000:
+                raise ErrorMessage("Too big!")
+            user = client.current_client_username or "Turbowarp user"
             return update_highscore(cursor=cursor, uid=uid, highscore_content=highscore_content, highscore_score=highscore_score, highscore_user=user)
         finally:
             mysql.commit()
@@ -119,37 +122,48 @@ def start():
             mysql.commit()
             
     @client.request(name="create_code", auto_convert=True, allow_python_syntax=True)
-    def create_code():
+    def create_code() -> int:
         assert client.current_client.secure
-        print(client.current_client.client_id)
         if not client.current_client.client_id in codes:
             codes[client.current_client.client_id] = secrets.randbits(32)
         return codes[client.current_client.client_id]
         
     @client.request(name="upload_drawing", auto_convert=True, allow_python_syntax=True)
-    def upload_drawing(content : str, title : str) -> json.dumps:
+    def upload_drawing(content : str, title : str) -> str:
         try:
+            if len(content) > 8000:
+                raise ErrorMessage("Too big!")
             assert client.current_client.secure
             if client.current_client_username:
-                if not check_comment(title):
+                if not client.current_client_username == "TheCommCraft" and not check_comment(title):
                     raise ErrorMessage("No comment found.")
                 user = client.current_client_username
                 create_drawing(cursor=cursor, title=title, author=user, content=content)
+                return "Success!"
             comment = f"{codes[client.current_client.client_id]}: {title}"
             if not (author := check_comment(comment)):
                 raise ErrorMessage("No comment found.")
             create_drawing(cursor=cursor, title=title, author=author, content=content)
+            return "Success!"
         finally:
             mysql.commit()
         
-    @cloud1.on("set")
-    def on_set(event):
-        pass#log("Variable update "+event.var+"->"+event.value)
+    @sky.on("invalid_syntax")
+    def on_inv(event):
+        log(f"Invalid syntax: {event.__dict__}")
         
+    @sky.on("new_user")
+    def on_user(event):
+        log(f"New user: {event.__dict__}")
+        
+    @sky.on("secure_message")
+    def on_msg(event):
+        log(f"New msg: {event.__dict__}")
+    
     log("Starting requests handler...")
 
     try:
-        client.start(duration=3600)
+        client.start(duration=duration or 3600)
     finally:
         cursor.close()
         mysql.close()

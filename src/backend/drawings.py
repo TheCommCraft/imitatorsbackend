@@ -6,7 +6,7 @@ import json, secrets
 def find_drawing_screen_data(*, cursor : MySQLCursor, uid : int, user : str) -> dict:
     cursor.execute("SELECT content, likers, highscore_content, highscore_score, highscore_user FROM drawings WHERE uid=%s;", (uid, ))
     data = cursor.fetchall()
-    return {"content": data[0][0], "liked": user in json.loads(data[0][1]), "highscore": {"score": data[0][3], "content": data[0][2], "user": data[0][4]}}
+    return {"content": data[0][0], "liked": user in json.loads(data[0][1]), "highscore": {"score": float(data[0][3]), "content": data[0][2], "user": data[0][4]}}
 
 def find_content(*, cursor : MySQLCursor, uid : int) -> str:
     cursor.execute("SELECT content FROM drawings WHERE uid=%s;", (uid, ))
@@ -16,11 +16,13 @@ def find_content(*, cursor : MySQLCursor, uid : int) -> str:
 def find_highscore(*, cursor : MySQLCursor, uid : int) -> tuple[str, float, str]:
     cursor.execute("SELECT highscore_content, highscore_score, highscore_user FROM drawings WHERE uid=%s;", (uid, ))
     data = cursor.fetchall()
-    return data[0]
+    data = list(data[0])
+    data[1] = float(data[1])
+    return tuple(data)
 
 def update_highscore(*, cursor : MySQLCursor, uid : int, highscore_content : str, highscore_score : float, highscore_user : str) -> bool:
-    _, last_highscore_score = find_highscore(cursor=cursor, uid=uid)
-    if last_highscore_score < highscore_score:
+    _, last_highscore_score, _ = find_highscore(cursor=cursor, uid=uid)
+    if last_highscore_score >= highscore_score:
         return False
     cursor.execute("UPDATE drawings SET highscore_content=%s, highscore_score=%s, highscore_user=%s WHERE uid=%s;", (highscore_content, highscore_score, highscore_user, uid))
     cursor.fetchall()
@@ -39,7 +41,7 @@ def create_drawing(*, cursor : MySQLCursor, title : str, author : str, content :
     last_score_time = datetime.now()
     cursor.execute("INSERT INTO drawings \
         (uid, title, time_created, time_modified, author, views, likers, content, highscore_content, highscore_score, highscore_user, score, last_score_time) \
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);",
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);",
         (uid, title, time_created, time_modified, author, views, likers, content, highscore_content, highscore_score, highscore_user, score, last_score_time)
     )
     cursor.fetchall()
