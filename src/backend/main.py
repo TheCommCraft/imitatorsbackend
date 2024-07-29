@@ -45,17 +45,19 @@ def start(duration : Optional[int] = None):
     cloud2 = session.create_tw_cloudconnection(PROJECT_ID, contact_info="TheCommCraft on Scratch and Github", daemon_thread=True)
     cloud3 = session.create_cloudconnection(PROJECT_ID_2, daemon_thread=True)
     cloud4 = session.create_tw_cloudconnection(PROJECT_ID_2, contact_info="TheCommCraft on Scratch and Github", daemon_thread=True)
-    sky = Sky(cloud1, cloud2)
+    sky = Sky(cloud1, cloud2, cloud3, cloud4)
     cloud = CloudSocket(cloud=sky, security=security)
     client = RequestHandler(cloud_socket=cloud)
     mysql = mysql_connect(host=MYSQL_HOST, port=MYSQL_PORT, user=MYSQL_USER, password=MYSQL_PASS, database=MYSQL_DB)
     cursor = mysql.cursor()
     project = get_project(PROJECT_ID)
+    project_2 = get_project(PROJECT_ID_2)
 
     log("Created connections.")
 
     def get_comments() -> list[dict]:
-        return project.comments()
+        p = project if client.current_client._cloud.project_id == PROJECT_ID else project_2
+        return p.comments()
 
     def check_comment(content : Optional[str] = None, *, predicate : Optional[FunctionType] = None, user : Optional[str] = None) -> bool:
         for comment in get_comments():
