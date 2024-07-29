@@ -27,6 +27,7 @@ def start(duration : Optional[int] = None):
     XTOKEN = getenv("XTOKEN")
     USERNAME = getenv("USERNAME")
     PROJECT_ID = getenv("PROJECT_ID")
+    PROJECT_ID_2 = getenv("PROJECT_ID_2")
     SECURITY_SECRET = getenv("SECURITY_SECRET")
     MYSQL_HOST = getenv("MYSQL_HOST")
     MYSQL_PORT = getenv("MYSQL_PORT")
@@ -42,6 +43,8 @@ def start(duration : Optional[int] = None):
     security = Security.from_string(SECURITY_SECRET)
     cloud1 = session.create_cloudconnection(PROJECT_ID, daemon_thread=True)
     cloud2 = session.create_tw_cloudconnection(PROJECT_ID, contact_info="TheCommCraft on Scratch and Github", daemon_thread=True)
+    cloud3 = session.create_cloudconnection(PROJECT_ID_2, daemon_thread=True)
+    cloud4 = session.create_tw_cloudconnection(PROJECT_ID_2, contact_info="TheCommCraft on Scratch and Github", daemon_thread=True)
     sky = Sky(cloud1, cloud2)
     cloud = CloudSocket(cloud=sky, security=security)
     client = RequestHandler(cloud_socket=cloud)
@@ -175,6 +178,9 @@ def start(duration : Optional[int] = None):
             retry()
             return
         raise error
+    
+    cursor.execute("select title from drawings;")
+    print(cursor.fetchall())
     
     log("Starting requests handler...")
 
